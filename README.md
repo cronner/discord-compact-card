@@ -45,6 +45,7 @@ Then add the resource in **Settings > Dashboards > Resources**:
 | `show_toggle`          | boolean | `true`               | Show the eye toggle button                                  |
 | `hide_offline`         | boolean | `false`              | Start with offline users hidden                             |
 | `max_online`           | number  | `0`                  | Max active users to show (0 = unlimited)                    |
+| `max_offline`          | number  | `0`                  | Max offline users to show (0 = unlimited)                   |
 | `sort_by`              | string  | `"status"`           | Sort by `status`, `name`, or `game`                         |
 | `show_game_badge`      | boolean | `false`              | Show game icon as badge on avatar                           |
 | `click_action`         | string  | `"popup"`            | Click action: `popup`, `navigate`, or `toggle`              |
