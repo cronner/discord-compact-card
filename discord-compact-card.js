@@ -29,6 +29,15 @@ class DiscordCompactCard extends LitElement {
       auto_populate: true,
       hide_offline: false,
       show_toggle: true,
+      max_online: 0,
+      sort_by: "status",
+      show_game_badge: false,
+      click_action: "popup",
+      click_action_target: "",
+      compact_mode: false,
+      voice_highlight_color: "",
+      filter_roles: [],
+      card_size: "auto",
     };
   }
 
@@ -94,7 +103,17 @@ class DiscordCompactCard extends LitElement {
     return Object.values(baseEntities);
   }
 
+  _filterByRoles(entities) {
+    const roles = this.config.filter_roles;
+    if (!roles || roles.length === 0) return entities;
+    return entities.filter(e => {
+      const userRoles = e.entity.attributes.roles || [];
+      return roles.some(r => userRoles.includes(r));
+    });
+  }
+
   _sortByStatus(entities) {
+    const sortBy = this.config.sort_by || "status";
     const groups = { online: [], idle: [], dnd: [], offline: [], unavailable: [] };
     for (const e of entities) {
       const state = e.entity.state;
@@ -106,29 +125,24 @@ class DiscordCompactCard extends LitElement {
         const aVoice = (a.voice_channel && a.voice_channel !== "unknown") ? 0 : 1;
         const bVoice = (b.voice_channel && b.voice_channel !== "unknown") ? 0 : 1;
         if (aVoice !== bVoice) return aVoice - bVoice;
+        if (sortBy === "name") {
+          const na = a.entity.attributes.display_name || "";
+          const nb = b.entity.attributes.display_name || "";
+          return na.localeCompare(nb);
+        }
+        if (sortBy === "game") {
+          const ag = a.game && a.game !== "unknown" && a.game !== "None" ? a.game : "";
+          const bg = b.game && b.game !== "unknown" && b.game !== "None" ? b.game : "";
+          if (ag && !bg) return -1;
+          if (!ag && bg) return 1;
+          return ag.localeCompare(bg);
+        }
         const na = a.entity.attributes.display_name || "";
         const nb = b.entity.attributes.display_name || "";
         return na.localeCompare(nb);
       });
     }
     return groups;
-  }
-
-  _pairUp(items) {
-    const pairs = [];
-    for (let i = 0; i < items.length; i += 2) {
-      pairs.push(items.slice(i, i + 2));
-    }
-    return pairs;
-  }
-
-  _renderPairRow(pair) {
-    return html`
-      <div class="user-row">
-        ${this._renderUserItem(pair[0])}
-        ${pair[1] ? this._renderUserItem(pair[1]) : html`<div class="steam-multi empty"></div>`}
-      </div>
-    `;
   }
 
   _stateLabel(state) {
@@ -150,32 +164,60 @@ class DiscordCompactCard extends LitElement {
     }
   }
 
+  _handleAction(entry) {
+    const action = this.config.click_action || "popup";
+    const target = this.config.click_action_target || "";
+    const e = entry.entity;
+
+    if (action === "navigate" && target) {
+      history.pushState(null, "", target);
+      const event = new Event("location-changed", { composed: true });
+      window.dispatchEvent(event);
+    } else if (action === "toggle" && target) {
+      const domain = target.split(".")[0];
+      const service = domain === "input_boolean" ? "toggle" : "toggle";
+      this.hass.callService(domain, service, { entity_id: target });
+    } else {
+      const event = new Event("hass-more-info", { composed: true });
+      event.detail = { entityId: e.entity_id };
+      this.dispatchEvent(event);
+    }
+  }
+
   _renderUserItem(entry) {
     const e = entry.entity;
     const attrs = e.attributes;
     const name = attrs.display_name || attrs.friendly_name || "Unknown";
     const avatar = attrs.entity_picture || "";
     const game = entry.game && entry.game !== "unknown" && entry.game !== "None" ? entry.game : null;
-    const bgImg = entry.game_image_header && entry.game_image_header !== "unknown"
+    const gameImg = entry.game_image_header && entry.game_image_header !== "unknown"
+      ? entry.game_image_header
+      : entry.game_image_capsule_231x87 && entry.game_image_capsule_231x87 !== "unknown"
+        ? entry.game_image_capsule_231x87
+        : null;
+    const bgImg = this.config.compact_mode ? null : (entry.game_image_header && entry.game_image_header !== "unknown"
       ? entry.game_image_header
       : entry.game_image_large && entry.game_image_large !== "unknown"
         ? entry.game_image_large
         : entry.game_image_capsule_231x87 && entry.game_image_capsule_231x87 !== "unknown"
           ? entry.game_image_capsule_231x87
-          : null;
+          : null);
     const voice = entry.voice_channel && entry.voice_channel !== "unknown" ? entry.voice_channel : null;
     const state = e.state;
-    const color = this._stateColor(state);
+    const showBadge = this.config.show_game_badge && gameImg;
+    const compact = this.config.compact_mode;
 
     return html`
-      <div class="steam-multi ${state} ${voice ? "in-voice" : ""}" @click=${() => this._handlePopup(e)}>
+      <div class="steam-multi ${state} ${voice ? "in-voice" : ""} ${compact ? "compact" : ""}" @click=${() => this._handleAction(entry)}>
         ${bgImg ? html`<img src="${bgImg}" class="steam-game-bg" onerror="this.style.display='none'">` : ""}
-        <div class="steam-user">
+        <div class="steam-user ${compact ? "compact" : ""}">
           <div class="avatar-wrap ${voice ? "voice" : state}">
             ${avatar ? html`<img src="${avatar}?size=128" class="steam-avatar ${voice ? "voice" : state}" onerror="this.style.display='none'">` : html`<div class="steam-avatar ${voice ? "voice" : state}"></div>`}
+            ${showBadge ? html`<img src="${gameImg}" class="game-badge" onerror="this.style.display='none'">` : ""}
           </div>
           <div class="user-container ${game ? "" : "no-game"}">
             <div class="steam-username ${voice ? "voice" : state}">${name}</div>
+            ${!compact ? html`
             <div class="steam-value ${state} ${voice ? "voice" : ""}">
               ${voice ? html`<ha-icon icon="mdi:phone" class="mic-icon"></ha-icon>${" " + voice}` : ""}
               ${!voice && game ? game : ""}
@@ -183,28 +225,9 @@ class DiscordCompactCard extends LitElement {
               ${voice && entry.voice_self_deaf ? html`<ha-icon icon="mdi:volume-off" class="mic-icon"></ha-icon>` : ""}
               ${voice && entry.voice_self_mute ? html`<ha-icon icon="mdi:microphone-off" class="mic-icon"></ha-icon>` : ""}
               ${voice && entry.voice_stream ? html`<ha-icon icon="mdi:monitor-shimmer" class="mic-icon"></ha-icon>` : ""}
-            </div>
+            </div>` : ""}
           </div>
         </div>
-      </div>
-    `;
-  }
-
-  _renderPairRow(pair) {
-    return html`
-      <div class="user-row">
-        ${this._renderUserItem(pair[0])}
-        ${pair[1] ? this._renderUserItem(pair[1]) : html`<div class="steam-multi empty"></div>`}
-      </div>
-    `;
-  }
-
-  _renderGroup(label, entries) {
-    if (!entries || entries.length === 0) return html``;
-    return html`
-      <div class="status-category">${label} (${entries.length})</div>
-      <div class="user-grid">
-        ${entries.map(e => this._renderUserItem(e))}
       </div>
     `;
   }
@@ -214,18 +237,30 @@ class DiscordCompactCard extends LitElement {
       return html`<ha-card><div class="empty">Ingen Discord-brugere fundet</div></ha-card>`;
     }
 
-    const groups = this._sortByStatus(this._entities);
+    let filtered = this._filterByRoles(this._entities);
+    const groups = this._sortByStatus(filtered);
     const hideOffline = this.config.hide_offline || this._hideOffline || (this.config.show_offline === false);
     const showToggle = this.config.show_toggle !== false;
+    const maxOnline = this.config.max_online || 0;
+    const compact = this.config.compact_mode;
+    const voiceColor = this.config.voice_highlight_color || "";
 
     const allUsers = [...groups.online, ...groups.idle, ...groups.dnd, ...groups.unavailable, ...groups.offline];
     const inVoice = allUsers.filter(e => e.voice_channel && e.voice_channel !== "unknown");
     const notInVoice = allUsers.filter(e => !e.voice_channel || e.voice_channel === "unknown");
     const offlineNotInVoice = notInVoice.filter(e => e.entity.state === "offline");
-    const activeNotInVoice = notInVoice.filter(e => e.entity.state !== "offline");
+    let activeNotInVoice = notInVoice.filter(e => e.entity.state !== "offline");
+    if (maxOnline > 0) activeNotInVoice = activeNotInVoice.slice(0, maxOnline);
+
+    const totalVisible = inVoice.length + activeNotInVoice.length + (!hideOffline ? offlineNotInVoice.length : 0);
+
+    let cardStyle = "";
+    if (voiceColor) {
+      cardStyle = `--voice-color: ${voiceColor}; --voice-shadow: ${voiceColor}88;`;
+    }
 
     return html`
-      <ha-card>
+      <ha-card style="${cardStyle}">
         <div class="card-header">
           ${this.config.title ? html`<div class="name">${this.config.title}</div>` : html`<div></div>`}
           ${showToggle && groups.offline.length > 0
@@ -238,30 +273,24 @@ class DiscordCompactCard extends LitElement {
         ${inVoice.length > 0
           ? html`
               <div class="status-category">I opkald (${inVoice.length})</div>
-              <div class="user-grid">
+              <div class="user-grid ${compact ? "compact" : ""}">
                 ${inVoice.map(e => this._renderUserItem(e))}
               </div>`
           : ""}
         ${activeNotInVoice.length > 0
-          ? html`<div class="user-grid">
+          ? html`<div class="user-grid ${compact ? "compact" : ""}">
               ${activeNotInVoice.map(e => this._renderUserItem(e))}
             </div>`
           : ""}
         ${!hideOffline && offlineNotInVoice.length > 0
           ? html`
               <div class="status-category">Offline (${offlineNotInVoice.length})</div>
-              <div class="user-grid">
+              <div class="user-grid ${compact ? "compact" : ""}">
                 ${offlineNotInVoice.map(e => this._renderUserItem(e))}
               </div>`
           : ""}
       </ha-card>
     `;
-  }
-
-  _handlePopup(stateObj) {
-    const event = new Event("hass-more-info", { composed: true });
-    event.detail = { entityId: stateObj.entity_id };
-    this.dispatchEvent(event);
   }
 
   _toggleOffline() {
@@ -325,17 +354,15 @@ class DiscordCompactCard extends LitElement {
         margin: 6px 0 4px 0;
         letter-spacing: 0.5px;
       }
-      .user-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4px;
-        margin-bottom: 4px;
-      }
       .user-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 4px;
         margin-bottom: 4px;
+      }
+      .user-grid.compact {
+        gap: 2px;
+        margin-bottom: 2px;
       }
       .steam-multi {
         position: relative;
@@ -344,6 +371,10 @@ class DiscordCompactCard extends LitElement {
         min-height: 48px;
         cursor: pointer;
         transition: opacity 0.15s;
+      }
+      .steam-multi.compact {
+        min-height: 36px;
+        border-radius: 6px;
       }
       .steam-multi.empty {
         background: transparent;
@@ -378,8 +409,13 @@ class DiscordCompactCard extends LitElement {
         z-index: 1;
         gap: 8px;
       }
+      .steam-user.compact {
+        padding: 4px 6px;
+        gap: 6px;
+      }
       .avatar-wrap {
         flex-shrink: 0;
+        position: relative;
       }
       .steam-avatar {
         width: 36px;
@@ -390,6 +426,22 @@ class DiscordCompactCard extends LitElement {
         border-style: solid;
         border-width: 2px;
         object-fit: cover;
+      }
+      .steam-multi.compact .steam-avatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+      }
+      .game-badge {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        object-fit: cover;
+        border: 1px solid rgba(0, 0, 0, 0.4);
       }
       .steam-avatar.online {
         border-color: #6cff4f9d;
@@ -409,8 +461,8 @@ class DiscordCompactCard extends LitElement {
         box-shadow: 1px 0.5px 3px #aaaaaa88;
       }
       .steam-avatar.voice {
-        border-color: #e44040cc;
-        box-shadow: 1px 0.5px 3px #e4404088;
+        border-color: var(--voice-color, #e44040cc);
+        box-shadow: 1px 0.5px 3px var(--voice-shadow, #e4404088);
         opacity: 1;
       }
       .steam-username.voice {
@@ -433,6 +485,9 @@ class DiscordCompactCard extends LitElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+      .steam-multi.compact .steam-username {
+        font-size: 0.78em;
       }
       .steam-username.offline {
         opacity: 0.5;
