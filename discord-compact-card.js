@@ -248,7 +248,9 @@ class DiscordCompactCard extends LitElement {
     const allUsers = [...groups.online, ...groups.idle, ...groups.dnd, ...groups.unavailable, ...groups.offline];
     const inVoice = allUsers.filter(e => e.voice_channel && e.voice_channel !== "unknown");
     const notInVoice = allUsers.filter(e => !e.voice_channel || e.voice_channel === "unknown");
-    const offlineNotInVoice = notInVoice.filter(e => e.entity.state === "offline");
+    let offlineNotInVoice = notInVoice.filter(e => e.entity.state === "offline");
+    const maxOffline = this.config.max_offline || 0;
+    if (maxOffline > 0) offlineNotInVoice = offlineNotInVoice.slice(0, maxOffline);
     let activeNotInVoice = notInVoice.filter(e => e.entity.state !== "offline");
     if (maxOnline > 0) activeNotInVoice = activeNotInVoice.slice(0, maxOnline);
 
