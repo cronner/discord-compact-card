@@ -34,17 +34,19 @@ Then add the resource in **Settings > Dashboards > Resources**:
 
 ## Configuration
 
-| Name           | Type    | Default              | Description                        |
-|----------------|---------|----------------------|------------------------------------|
-| `title`        | string  | `"Discord Gaming"`   | Card header title                  |
-| `hide_offline` | boolean | `false`              | Start with offline users hidden    |
-| `show_toggle`  | boolean | `true`               | Show the eye toggle button         |
+| Name             | Type    | Default              | Description                                      |
+|------------------|---------|----------------------|--------------------------------------------------|
+| `title`          | string  | `"Discord Gaming"`   | Card header title                                |
+| `auto_populate`  | boolean | `true`               | Auto-discover all Discord users                  |
+| `show_toggle`    | boolean | `true`               | Show the eye toggle button                       |
+| `hide_offline`   | boolean | `false`              | Start with offline users hidden                  |
 
 ### Example
 
 ```yaml
 type: custom:discord-compact-card
 title: "Discord Gaming"
-hide_offline: false
+auto_populate: true
 show_toggle: true
+hide_offline: false
 ```
