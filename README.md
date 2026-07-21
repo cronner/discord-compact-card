@@ -1,68 +1,121 @@
 # Discord Compact Card
 
-A Home Assistant Lovelace custom card that auto-discovers all Discord users and displays them in a compact grid layout with game backgrounds, grouped by status.
+Custom [Home Assistant](https://www.home-assistant.io/) Lovelace card that auto-discovers all Discord users from the [Discord Game](https://github.com/3rob3/Discord-Game) integration and displays them in a compact grid layout.
+
+Requires the [Discord Game](https://github.com/3rob3/Discord-Game) integration.
 
 ## Features
 
 - Auto-discovers all `sensor.discord_user_*` entities
-- Shows online status, game activity, and voice channels
-- Steam game data overlay via `steam_discord_map`
-- Toggle offline visibility
-- Compact mode
-- Role filtering
+- Compact 2-column grid layout
+- Avatar with colored status border (online/idle/dnd/offline/voice)
+- Game background images (header, large, capsule)
+- Voice channel indicator with mute/deaf/stream icons
+- Voice users sorted to top with customizable border color
+- Toggle button to show/hide offline users
+- Click to open entity details popup, navigate, or toggle an entity
+- Compact mode for minimal layout
+- Game badge on avatar
+- Filter by Discord roles
+- Sort by status, name, or game
 
 ## Installation
 
 ### HACS (recommended)
 
-Add this repository as a custom repository in HACS, then install "Discord Compact Card".
+1. Add this repository as a custom repository in HACS (type: Lovelace)
+2. Search for "Discord Compact Card" and install
 
 ### Manual
 
-1. Copy `discord-compact-card.js` to `/config/www/community/discord-compact-card/`
-2. Add the resource in Lovelace:
-   ```yaml
-   resources:
-     - url: /local/community/discord-compact-card/discord-compact-card.js
-       type: module
-   ```
+Copy `discord-compact-card.js` to your `www/community/discord-compact-card/` directory.
+
+Then add the resource in **Settings > Dashboards > Resources**:
+
+| URL                                | Type   |
+|------------------------------------|--------|
+| `/local/community/discord-compact-card/discord-compact-card.js` | JavaScript Module |
 
 ## Configuration
+
+| Name                   | Type    | Default              | Description                                                 |
+|------------------------|---------|----------------------|-------------------------------------------------------------|
+| `title`                | string  | `"Discord Gaming"`   | Card header title                                           |
+| `auto_populate`        | boolean | `true`               | Auto-discover all Discord users                             |
+| `show_toggle`          | boolean | `true`               | Show the eye toggle button                                  |
+| `hide_offline`         | boolean | `false`              | Start with offline users hidden                             |
+| `max_online`           | number  | `0`                  | Max active users to show (0 = unlimited)                    |
+| `max_offline`          | number  | `0`                  | Max offline users to show (0 = unlimited)                   |
+| `sort_by`              | string  | `"status"`           | Sort by `status`, `name`, or `game`                         |
+| `show_game_badge`      | boolean | `false`              | Show game icon as badge on avatar                           |
+| `click_action`         | string  | `"popup"`            | Click action: `popup`, `navigate`, or `toggle`              |
+| `click_action_target`  | string  | `""`                 | Target for navigate/toggle (URL path or entity_id)          |
+| `compact_mode`         | boolean | `false`              | Minimal layout without background images                    |
+| `voice_highlight_color`| string  | `""`                 | Custom hex color for voice avatar border (default: red)     |
+| `filter_roles`         | list    | `[]`                 | Only show users with these Discord roles                    |
+| `show_steam_level`     | boolean | `false`              | Show Steam level badge on avatar                            |
+| `steam_only_badge`     | boolean | `true`               | Show Steam icon for users only on Steam                     |
+
+### Examples
+
+Basic:
+
+```yaml
+type: custom:discord-compact-card
+title: "Discord Gaming"
+```
+
+Full featured:
+
+```yaml
+type: custom:discord-compact-card
+title: "Discord Gaming"
+auto_populate: true
+show_toggle: true
+hide_offline: false
+max_online: 10
+sort_by: name
+show_game_badge: true
+compact_mode: false
+voice_highlight_color: "#ff5722"
+filter_roles:
+  - "Gaming"
+  - "Members"
+```
+
+Compact mode:
 
 ```yaml
 type: custom:discord-compact-card
 title: "Discord"
-auto_populate: true
-hide_offline: true
-show_toggle: true
+compact_mode: true
 show_game_badge: true
-compact_mode: false
-sort_by: "status"
-click_action: "popup"
+sort_by: game
 ```
 
-### Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `title` | `"Discord"` | Card title |
-| `auto_populate` | `true` | Auto-discover Discord users |
-| `entities` | `[]` | Manual entity list (e.g. `["sensor.discord_user_12345"]`) when `auto_populate: false` |
-| `hide_offline` | `false` | Hide offline users by default |
-| `show_toggle` | `true` | Show toggle button for offline visibility |
-| `show_game_badge` | `false` | Show game image badge on avatar |
-| `compact_mode` | `false` | Compact display mode |
-| `sort_by` | `"status"` | Sort order (`status`, `name`, `game`) |
-| `click_action` | `"popup"` | Click action (`popup`, `navigate`, `toggle`) |
-| `filter_roles` | `[]` | Only show users with these Discord roles |
-| `steam_discord_map` | `[]` | Map Steam entities to Discord users for game overlay |
-
-### Steam Game Overlay
-
-Use `steam_discord_map` to overlay Steam game data onto Discord users:
+Click to navigate:
 
 ```yaml
-steam_discord_map:
-  - discord: "discord_username"
-    steam: "sensor.steam_username"
+type: custom:discord-compact-card
+title: "Discord"
+click_action: navigate
+click_action_target: /lovelace/discord-detail
 ```
+
+Click to toggle entity:
+
+```yaml
+type: custom:discord-compact-card
+title: "Discord"
+click_action: toggle
+click_action_target: input_boolean.discord_notification
+```
+
+### Steam Integration
+
+Optional: Show Steam level badge on avatar.
+
+| Name                | Type    | Default | Description                                                      |
+|---------------------|---------|---------|------------------------------------------------------------------|
+| `show_steam_level`  | boolean | `false` | Show Steam level badge on avatar                                 |
+| `steam_only_badge`  | boolean | `true`  | Show Steam icon for users only on Steam                          |

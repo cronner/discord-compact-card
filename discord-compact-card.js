@@ -33,25 +33,16 @@ class DiscordCompactCard extends LitElement {
       voice_highlight_color: "",
       filter_roles: [],
       card_size: "auto",
-      steam_discord_map: [],
     };
   }
 
   setConfig(config) {
     this.config = config;
-    if (config.steam_discord_map) {
-      for (const entry of config.steam_discord_map) {
-        if (!entry.discord || !entry.steam) {
-          console.warn("discord-compact-card: steam_discord_map entry missing 'discord' or 'steam'");
-        }
-      }
-    }
   }
 
   set hass(hass) {
     this._hass = hass;
     let entities = this._discoverEntities(hass);
-    entities = this._mergeSteamData(entities);
     this._entities = entities;
     this.requestUpdate();
   }
@@ -110,46 +101,6 @@ class DiscordCompactCard extends LitElement {
     }
 
     return Object.values(baseEntities);
-  }
-
-  _mergeSteamData(entities) {
-    const map = this.config.steam_discord_map;
-    if (!map || map.length === 0) return entities;
-
-    const steamMap = {};
-    for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (!entityId.startsWith("sensor.steam_")) continue;
-      if (entityId.includes("_firmware") || entityId.includes("_update")) continue;
-      steamMap[entityId] = {
-        entity_id: entityId,
-        state: state.state,
-        game: state.attributes.game || null,
-        game_image_header: state.attributes.game_image_header || null,
-        game_image_main: state.attributes.game_image_main || null,
-        level: state.attributes.level || null,
-        entity_picture: state.attributes.entity_picture || null,
-        friendly_name: state.attributes.friendly_name || entityId,
-      };
-    }
-
-    for (const entry of map) {
-      const steamData = steamMap[entry.steam];
-      if (!steamData) continue;
-
-      for (const entity of entities) {
-        const name = (entity.entity.attributes.friendly_name || "").toLowerCase();
-        if (name === entry.discord.toLowerCase()) {
-          if (!entity.game && steamData.game) {
-            entity.game = steamData.game;
-            entity.game_image_header = entity.game_image_header || steamData.game_image_header;
-            entity.game_image_main = steamData.game_image_main;
-          }
-          break;
-        }
-      }
-    }
-
-    return entities;
   }
 
   _filterByRoles(entities) {
