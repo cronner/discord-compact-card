@@ -63,8 +63,6 @@ Use `steam_discord_map` to overlay Steam game data onto Discord users:
 
 ```yaml
 steam_discord_map:
-  - discord: "cronnerdk"
-    steam: "sensor.steam_cronnerdk"
-  - discord: "halpo."
-    steam: "sensor.steam_halpo"
+  - discord: "discord_username"
+    steam: "sensor.steam_username"
 ```
