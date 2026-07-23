@@ -11,6 +11,7 @@ Requires the [Discord Game](https://github.com/3rob3/Discord-Game) integration.
 - Avatar with colored status border (online/idle/dnd/offline)
 - Red ring on avatar for invisible/offline users in voice calls
 - Game background images (header, large, capsule)
+- **Automatic Steam image lookup** — when the integration has no images, the card fetches them from the Steam Store API
 - Voice channel indicator with mute/deaf/stream icons
 - Voice users sorted to top with red ring indicator on invisible/offline users
 - Toggle button to show/hide offline users
@@ -120,3 +121,13 @@ Optional: Show Steam level badge on avatar.
 |---------------------|---------|---------|------------------------------------------------------------------|
 | `show_steam_level`  | boolean | `false` | Show Steam level badge on avatar                                 |
 | `steam_only_badge`  | boolean | `true`  | Show Steam icon for users only on Steam                          |
+
+### Steam Image Fallback
+
+When the Discord Game integration doesn't provide game images (e.g. the game name doesn't match any Steam app in the integration's database), the card automatically:
+
+1. Searches the Steam Store API with the game name
+2. Fetches the matching game's images (header, capsule, library hero)
+3. Caches results so each game is only looked up once per session
+
+If the Steam API is unavailable (CORS restrictions, network issues), the card falls back to showing the gamepad icon with the game name.
