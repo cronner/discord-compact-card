@@ -70,6 +70,7 @@ class DiscordCompactCard extends LitElement {
         game_image_capsule_231x87: null,
         game_image_header: null,
         game_image_large: null,
+        game_image_library_hero: null,
         voice_channel: null,
         voice_afk: false,
         voice_self_mute: false,
@@ -93,6 +94,7 @@ class DiscordCompactCard extends LitElement {
       else if (suffix === "game_image_capsule_231x87") entry.game_image_capsule_231x87 = state.state;
       else if (suffix === "game_image_header") entry.game_image_header = state.state;
       else if (suffix === "game_image_large") entry.game_image_large = state.state;
+      else if (suffix === "game_image_library_hero") entry.game_image_library_hero = state.state;
       else if (suffix === "voice_channel") entry.voice_channel = state.state;
       else if (suffix === "voice_afk") entry.voice_afk = state.state === "True";
       else if (suffix === "voice_self_mute") entry.voice_self_mute = state.state === "True";
@@ -193,7 +195,9 @@ class DiscordCompactCard extends LitElement {
         ? entry.game_image_large
         : entry.game_image_capsule_231x87 && entry.game_image_capsule_231x87 !== "unknown"
           ? entry.game_image_capsule_231x87
-          : null);
+          : entry.game_image_library_hero && entry.game_image_library_hero !== "unknown"
+            ? entry.game_image_library_hero
+            : null);
     const voice = entry.voice_channel && entry.voice_channel !== "unknown" ? entry.voice_channel : null;
     const state = e.state;
     const showBadge = this.config.show_game_badge && gameImg;
