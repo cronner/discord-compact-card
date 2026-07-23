@@ -5,6 +5,9 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 class DiscordCompactCard extends LitElement {
+  static _steamCache = new Map();
+  static _fetching = new Set();
+
   static get properties() {
     return {
       hass: {},
@@ -44,6 +47,7 @@ class DiscordCompactCard extends LitElement {
     this._hass = hass;
     let entities = this._discoverEntities(hass);
     this._entities = entities;
+    this._checkSteamFallbacks(entities);
     this.requestUpdate();
   }
 
@@ -103,6 +107,59 @@ class DiscordCompactCard extends LitElement {
     }
 
     return Object.values(baseEntities);
+  }
+
+  _checkSteamFallbacks(entities) {
+    const ts = Math.floor(Date.now() / 1000);
+    for (const entry of entities) {
+      const hasImages = (entry.game_image_header && entry.game_image_header !== "unknown") ||
+                        (entry.game_image_capsule_231x87 && entry.game_image_capsule_231x87 !== "unknown");
+      const game = entry.game && entry.game !== "unknown" && entry.game !== "None" ? entry.game : null;
+      if (hasImages || !game) continue;
+
+      const cacheKey = game.toLowerCase().trim();
+      if (DiscordCompactCard._steamCache.has(cacheKey)) {
+        const cached = DiscordCompactCard._steamCache.get(cacheKey);
+        if (cached) this._applySteamImages(entry, cached, ts);
+        continue;
+      }
+      if (!DiscordCompactCard._fetching.has(cacheKey)) {
+        this._fetchSteamImages(game, cacheKey);
+      }
+    }
+  }
+
+  _applySteamImages(entry, imgs, ts) {
+    const base = imgs;
+    const sep = base.includes("?") ? "&" : "?";
+    const t = `${sep}t=${ts}`;
+    if (!entry.game_image_header || entry.game_image_header === "unknown")
+      entry.game_image_header = `${base}/header.jpg${t}`;
+    if (!entry.game_image_capsule_231x87 || entry.game_image_capsule_231x87 === "unknown")
+      entry.game_image_capsule_231x87 = `${base}/capsule_231x87.jpg${t}`;
+    if (!entry.game_image_large || entry.game_image_large === "unknown")
+      entry.game_image_large = `${base}/capsule_616x353.jpg${t}`;
+    if (!entry.game_image_library_hero || entry.game_image_library_hero === "unknown")
+      entry.game_image_library_hero = `${base}/library_hero.jpg${t}`;
+  }
+
+  async _fetchSteamImages(gameName, cacheKey) {
+    DiscordCompactCard._fetching.add(cacheKey);
+    try {
+      const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(gameName)}&l=english&cc=US`;
+      const resp = await fetch(url);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (!data.items || data.items.length === 0) return;
+      const appId = data.items[0].id;
+      const baseUrl = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}`;
+      DiscordCompactCard._steamCache.set(cacheKey, baseUrl);
+      this.requestUpdate();
+    } catch (e) {
+      DiscordCompactCard._steamCache.set(cacheKey, null);
+    } finally {
+      DiscordCompactCard._fetching.delete(cacheKey);
+    }
   }
 
   _filterByRoles(entities) {
