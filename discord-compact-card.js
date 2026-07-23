@@ -216,11 +216,11 @@ class DiscordCompactCard extends LitElement {
             ${!compact ? html`
             <div class="steam-value ${voice ? "voice" : state}">
               ${voice ? html`<ha-icon icon="mdi:phone" class="mic-icon"></ha-icon>${" " + voice}` : ""}
-              ${game ? html`<ha-icon icon="mdi:gamepad-variant" class="mic-icon"></ha-icon>${" " + game}` : ""}
-              ${!voice && !game ? this._stateLabel(state) : ""}
+              ${voice && entry.voice_stream ? html`<ha-icon icon="mdi:monitor-shimmer" class="mic-icon"></ha-icon>` : ""}
               ${voice && entry.voice_self_deaf ? html`<ha-icon icon="mdi:volume-off" class="mic-icon"></ha-icon>` : ""}
               ${voice && entry.voice_self_mute ? html`<ha-icon icon="mdi:microphone-off" class="mic-icon"></ha-icon>` : ""}
-              ${voice && entry.voice_stream ? html`<ha-icon icon="mdi:monitor-shimmer" class="mic-icon"></ha-icon>` : ""}
+              ${game ? html`<ha-icon icon="mdi:gamepad-variant" class="mic-icon"></ha-icon>${" " + game}` : ""}
+              ${!voice && !game ? this._stateLabel(state) : ""}
             </div>` : ""}
           </div>
         </div>
