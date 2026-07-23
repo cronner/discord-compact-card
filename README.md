@@ -8,10 +8,11 @@ Requires the [Discord Game](https://github.com/3rob3/Discord-Game) integration.
 
 - Auto-discovers all `sensor.discord_user_*` entities
 - Compact 2-column grid layout
-- Avatar with colored status border (online/idle/dnd/offline/voice)
+- Avatar with colored status border (online/idle/dnd/offline)
+- Red ring on avatar for invisible/offline users in voice calls
 - Game background images (header, large, capsule)
 - Voice channel indicator with mute/deaf/stream icons
-- Voice users sorted to top with customizable border color
+- Voice users sorted to top with red ring indicator on invisible/offline users
 - Toggle button to show/hide offline users
 - Click to open entity details popup, navigate, or toggle an entity
 - Compact mode for minimal layout
@@ -51,7 +52,7 @@ Then add the resource in **Settings > Dashboards > Resources**:
 | `click_action`         | string  | `"popup"`            | Click action: `popup`, `navigate`, or `toggle`              |
 | `click_action_target`  | string  | `""`                 | Target for navigate/toggle (URL path or entity_id)          |
 | `compact_mode`         | boolean | `false`              | Minimal layout without background images                    |
-| `voice_highlight_color`| string  | `""`                 | Custom hex color for voice avatar border (default: red)     |
+| `voice_highlight_color`| string  | `""`                 | Custom hex color for the red ring on invisible/offline voice users |
 | `filter_roles`         | list    | `[]`                 | Only show users with these Discord roles                    |
 | `show_steam_level`     | boolean | `false`              | Show Steam level badge on avatar                            |
 | `steam_only_badge`     | boolean | `true`               | Show Steam icon for users only on Steam                     |

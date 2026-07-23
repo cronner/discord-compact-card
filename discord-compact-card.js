@@ -200,17 +200,17 @@ class DiscordCompactCard extends LitElement {
     const compact = this.config.compact_mode;
 
     return html`
-      <div class="steam-multi ${state} ${voice ? "in-voice" : ""} ${compact ? "compact" : ""}" @click=${() => this._handleAction(entry)}>
+      <div class="steam-multi ${voice ? "in-voice" : state} ${compact ? "compact" : ""}" @click=${() => this._handleAction(entry)}>
         ${bgImg ? html`<img src="${bgImg}" class="steam-game-bg" onerror="this.style.display='none'">` : ""}
         <div class="steam-user ${compact ? "compact" : ""}">
-          <div class="avatar-wrap ${voice ? "voice" : state}">
-            ${avatar ? html`<img src="${avatar}?size=128" class="steam-avatar ${voice ? "voice" : state}" onerror="this.style.display='none'">` : html`<div class="steam-avatar ${voice ? "voice" : state}"></div>`}
+          <div class="avatar-wrap ${state}">
+            ${avatar ? html`<img src="${avatar}?size=128" class="steam-avatar ${state}" onerror="this.style.display='none'">` : html`<div class="steam-avatar ${state}"></div>`}
             ${showBadge ? html`<img src="${gameImg}" class="game-badge" onerror="this.style.display='none'">` : ""}
           </div>
           <div class="user-container ${game ? "" : "no-game"}">
             <div class="steam-username ${voice ? "voice" : state}">${name}</div>
             ${!compact ? html`
-            <div class="steam-value ${state} ${voice ? "voice" : ""}">
+            <div class="steam-value ${voice ? "voice" : state}">
               ${voice ? html`<ha-icon icon="mdi:phone" class="mic-icon"></ha-icon>${" " + voice}` : ""}
               ${!voice && game ? game : ""}
               ${!voice && !game ? this._stateLabel(state) : ""}
@@ -446,16 +446,10 @@ class DiscordCompactCard extends LitElement {
       }
       .steam-avatar.offline {
         border-color: #aaaaaa9d;
-        opacity: 0.3;
         box-shadow: 1px 0.5px 3px #aaaaaa88;
       }
-      .steam-avatar.voice {
-        border-color: var(--voice-color, #e44040cc);
-        box-shadow: 1px 0.5px 3px var(--voice-shadow, #e4404088);
-        opacity: 1;
-      }
-      .steam-username.voice {
-        opacity: 1;
+      .steam-multi.in-voice .steam-avatar.offline {
+        box-shadow: 0 0 0 2px var(--voice-color, #e44040), 1px 0.5px 3px var(--voice-shadow, #e4404088);
       }
       .user-container {
         margin-left: 0;
@@ -491,11 +485,15 @@ class DiscordCompactCard extends LitElement {
       .steam-value.offline {
         opacity: 0.5;
       }
+      .steam-username.voice {
+        opacity: 1;
+      }
       .steam-value.voice {
         color: #4081e4;
         display: flex;
         align-items: center;
         gap: 3px;
+        opacity: 1;
       }
       .mic-icon {
         --mdc-icon-size: 12px;
